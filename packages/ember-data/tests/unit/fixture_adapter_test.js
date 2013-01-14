@@ -76,6 +76,65 @@ test("should load data for a type asynchronously when it is requested", function
   }, 1000);
 });
 
+test("should load embedded records asynchronously when it is requested", function() {
+  expect(3);
+
+  DS.FixtureAdapter.map(Person, {
+    addresses: {
+      embedded: 'always'
+    }
+  });
+
+  var Address = DS.Model.extend({
+    onwer: DS.belongsTo(Person),
+    city: DS.attr('string')
+  });
+
+  Person.reopen({
+    addresses: DS.hasMany(Address)
+  });
+
+  Address.FIXTURES = [];
+
+  Person.FIXTURES = [{
+      id: 'wycats',
+      firstName: "Yehuda",
+      lastName: "Katz",
+      height: 65,
+      addresses: [
+        {
+          id: "sf",
+          city: "San Francisco"
+        }
+      ]
+  }];
+
+  stop();
+
+  var wycats = store.find(Person, 'wycats');
+  wycats.then(function() {
+    clearTimeout(timer);
+    start();
+
+    var addresses = get(wycats, 'addresses');
+    equal(get(addresses, 'length'), 1, "embedded records are loaded");
+
+    var address = get(addresses, 'firstObject');
+    equal(get(address, 'id'), "sf", "embedded records ids are loaded");
+
+    try {
+      equal(get(address, 'city'), "San Francisco", "embedded records attributes are loaded");
+    } catch(e) {
+      ok(false, "error raised when accessing to an embedded record attribute: " + e);
+    }
+  });
+
+  var timer = setTimeout(function() {
+    start();
+    ok(false, "timeout exceeded waiting for fixture data");
+  }, 1000);
+});
+
 test("should create record asynchronously when it is committed", function() {
   stop();
 
@@ -206,5 +265,5 @@ test("should throw if ids are not defined in the FIXTURES", function() {
     Person.find("1");
   }, /the id property must be defined for fixture/);
 
-  
+
 });
