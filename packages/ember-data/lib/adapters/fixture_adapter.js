@@ -56,9 +56,13 @@ DS.FixtureAdapter = DS.Adapter.extend({
       fixtures = fixtures.findProperty('id', id);
     }
 
+    var that = this;
+
     if (fixtures) {
       this.simulateRemoteCall(function() {
-        store.load(type, fixtures);
+        Ember.run(function() {
+          that.load(store, type, fixtures);
+        });
       }, store, type);
     }
   },
